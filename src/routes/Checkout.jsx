@@ -88,9 +88,7 @@ function Checkout() {
         body: JSON.stringify({
           ...formData,
           cart: cart.join(","),
-          invoice_amt: 200.0, // Example subtotal
-          invoice_tax: 26.0, // Example tax
-          invoice_total: 226.0, // Example total
+       
         }),
         credentials: "include",
       });
