@@ -9,7 +9,7 @@ function Cart() {
     const [total, setTotal] = useState(0);
     const navigate = useNavigate();
     const API_HOST = import.meta.env.VITE_APP_HOST;
-    const TAX_RATE = 0.15; // 15% tax rate
+    const TAX_RATE = 0.15; // 15% tax rate ?
 
     useEffect(() => {
         const fetchCartProducts = async () => {
