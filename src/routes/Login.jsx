@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext, useNavigate, Link } from "react-router-dom";
 
 function Login() {
     const setIsLoggedIn = useOutletContext();
@@ -81,6 +81,9 @@ function Login() {
                                 </div>
                             </form>
                             {errorMessage && <p className="text-danger mt-3">{errorMessage}</p>}
+                            <div className="mt-4 text-center">
+                                <p>Don't have an account? <Link to="/signup">Register</Link></p>
+                            </div>
                         </div>
                     </div>
                 </div>

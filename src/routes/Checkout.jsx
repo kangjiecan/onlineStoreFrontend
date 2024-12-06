@@ -1,24 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import Cookies from "js-cookie";
 
 function Checkout() {
   const [sessionActive, setSessionActive] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [error, setError] = useState("");
-  const [cart, setCart] = useState([]);
-  const [formData, setFormData] = useState({
-    street: "",
-    city: "",
-    province: "",
-    country: "",
-    postal_code: "",
-    credit_card: "",
-    credit_expire: "",
-    credit_cvv: "",
-  });
+  const [cart, setCart] = useState("");
   const navigate = useNavigate();
 
-  const API_HOST = import.meta.env.VITE_APP_HOST; // Dynamically use API host
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      street: "",
+      city: "",
+      province: "",
+      country: "",
+      postal_code: "",
+      credit_card: "",
+      credit_expire: "",
+      credit_cvv: "",
+    }
+  });
+
+  const API_HOST = import.meta.env.VITE_APP_HOST;
 
   useEffect(() => {
     checkSession();
@@ -60,25 +69,15 @@ function Checkout() {
   };
 
   const loadCart = () => {
-    const cartCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("cart="));
-    if (cartCookie) {
-      const cartArray = cartCookie.split("=")[1].split(",");
-      setCart(cartArray);
+    const cartValue = Cookies.get('cart');
+    if (!cartValue) {
+      setError("Your cart is empty");
+      return;
     }
+    setCart(cartValue);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (formData) => {
     try {
       const response = await fetch(`${API_HOST}/purchase/purchase`, {
         method: "POST",
@@ -87,8 +86,7 @@ function Checkout() {
         },
         body: JSON.stringify({
           ...formData,
-          cart: cart.join(","),
-       
+          cart: cart
         }),
         credentials: "include",
       });
@@ -96,8 +94,8 @@ function Checkout() {
       const data = await response.json();
 
       if (response.ok) {
+        Cookies.remove('cart', { path: '/' });
         alert(`Purchase completed successfully! Purchase ID: ${data.purchaseId}`);
-        document.cookie = "cart=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         navigate("/");
       } else {
         throw new Error(data.message || "Purchase failed");
@@ -108,7 +106,14 @@ function Checkout() {
   };
 
   if (error) {
-    return <div className="alert alert-danger">{error}</div>;
+    return (
+      <div className="container mt-5">
+        <div className="alert alert-danger">{error}</div>
+        <button className="btn btn-primary" onClick={() => setError("")}>
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   if (!sessionActive) {
@@ -133,122 +138,147 @@ function Checkout() {
           <p className="lead">
             Welcome, {userInfo.first_name} {userInfo.last_name}
           </p>
-          <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <strong>Cart Items:</strong> {cart}
+          </div>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-3">
               <label htmlFor="street" className="form-label">
                 Street:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="street"
-                name="street"
-                value={formData.street}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.street ? 'is-invalid' : ''}`}
+                {...register("street", { required: "Street is required" })}
               />
+              {errors.street && (
+                <div className="invalid-feedback">{errors.street.message}</div>
+              )}
             </div>
+
             <div className="mb-3">
               <label htmlFor="city" className="form-label">
                 City:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.city ? 'is-invalid' : ''}`}
+                {...register("city", { required: "City is required" })}
               />
+              {errors.city && (
+                <div className="invalid-feedback">{errors.city.message}</div>
+              )}
             </div>
+
             <div className="mb-3">
               <label htmlFor="province" className="form-label">
                 Province:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="province"
-                name="province"
-                value={formData.province}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.province ? 'is-invalid' : ''}`}
+                {...register("province", { required: "Province is required" })}
               />
+              {errors.province && (
+                <div className="invalid-feedback">{errors.province.message}</div>
+              )}
             </div>
+
             <div className="mb-3">
               <label htmlFor="country" className="form-label">
                 Country:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.country ? 'is-invalid' : ''}`}
+                {...register("country", { required: "Country is required" })}
               />
+              {errors.country && (
+                <div className="invalid-feedback">{errors.country.message}</div>
+              )}
             </div>
+
             <div className="mb-3">
               <label htmlFor="postal_code" className="form-label">
                 Postal Code:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="postal_code"
-                name="postal_code"
-                value={formData.postal_code}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
+                placeholder="A1B 2C3"
+                {...register("postal_code", {
+                  required: "Postal code is required",
+                  pattern: {
+                    value: /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/,
+                    message: "Invalid postal code format"
+                  }
+                })}
               />
+              {errors.postal_code && (
+                <div className="invalid-feedback">{errors.postal_code.message}</div>
+              )}
             </div>
+
             <div className="mb-3">
               <label htmlFor="credit_card" className="form-label">
                 Credit Card Number:
               </label>
               <input
-                type="text"
-                className="form-control"
-                id="credit_card"
-                name="credit_card"
-                value={formData.credit_card}
-                onChange={handleInputChange}
-                required
+                className={`form-control ${errors.credit_card ? 'is-invalid' : ''}`}
+                placeholder="1234567890123456"
+                maxLength="16"
+                {...register("credit_card", {
+                  required: "Credit card number is required",
+                  pattern: {
+                    value: /^\d{16}$/,
+                    message: "Must be 16 digits"
+                  }
+                })}
               />
+              {errors.credit_card && (
+                <div className="invalid-feedback">{errors.credit_card.message}</div>
+              )}
             </div>
+
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label htmlFor="credit_expire" className="form-label">
                   Expiration Date:
                 </label>
                 <input
-                  type="text"
-                  className="form-control"
-                  id="credit_expire"
-                  name="credit_expire"
-                  value={formData.credit_expire}
-                  onChange={handleInputChange}
-                  required
+                  className={`form-control ${errors.credit_expire ? 'is-invalid' : ''}`}
                   placeholder="MM/YY"
+                  maxLength="5"
+                  {...register("credit_expire", {
+                    required: "Expiration date is required",
+                    pattern: {
+                      value: /^\d{2}\/\d{2}$/,
+                      message: "Must be in MM/YY format"
+                    }
+                  })}
                 />
+                {errors.credit_expire && (
+                  <div className="invalid-feedback">{errors.credit_expire.message}</div>
+                )}
               </div>
+
               <div className="col-md-6 mb-3">
                 <label htmlFor="credit_cvv" className="form-label">
                   CVV:
                 </label>
                 <input
-                  type="text"
-                  className="form-control"
-                  id="credit_cvv"
-                  name="credit_cvv"
-                  value={formData.credit_cvv}
-                  onChange={handleInputChange}
-                  required
+                  className={`form-control ${errors.credit_cvv ? 'is-invalid' : ''}`}
+                  placeholder="123"
+                  maxLength="3"
+                  {...register("credit_cvv", {
+                    required: "CVV is required",
+                    pattern: {
+                      value: /^\d{3}$/,
+                      message: "Must be 3 digits"
+                    }
+                  })}
                 />
+                {errors.credit_cvv && (
+                  <div className="invalid-feedback">{errors.credit_cvv.message}</div>
+                )}
               </div>
             </div>
+
             <button type="submit" className="btn btn-primary">
               Complete Purchase
             </button>
