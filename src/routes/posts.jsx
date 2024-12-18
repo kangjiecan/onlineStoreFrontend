@@ -1,23 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-function Home() {
+function Posts() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const location = useLocation();
-  const { retrieve_userID } = useParams(); // Get userId from URL parameter
-  
-  // Get authentication info
-  const currentUserId = location.state?.userId || localStorage.getItem('userId');
-  const viewUserId = retrieve_userID || currentUserId; // Use URL parameter first, then auth userId
-  const accessToken = localStorage.getItem('accessToken');
-  const isAuthenticated = !!accessToken && currentUserId === viewUserId;
+  const { retrieve_userID } = useParams();
 
   useEffect(() => {
     const fetchPosts = async () => {
-      if (!viewUserId) {
+      if (!retrieve_userID) {
         setError("No user ID provided");
         setIsLoading(false);
         return;
@@ -25,7 +18,7 @@ function Home() {
 
       try {
         setIsLoading(true);
-        const apiUrl = `https://sf0far1zjh.execute-api.ca-central-1.amazonaws.com/Stage/get?type=post&userId=${viewUserId}`;
+        const apiUrl = `https://sf0far1zjh.execute-api.ca-central-1.amazonaws.com/Stage/get?type=post&userId=${retrieve_userID}`;
         const response = await fetch(apiUrl);
         
         if (!response.ok) {
@@ -43,25 +36,7 @@ function Home() {
     };
 
     fetchPosts();
-  }, [viewUserId]);
-
-  const handleDelete = async (postId) => {
-    if (!isAuthenticated) return;
-    // Add your delete logic here
-    console.log('Deleting post:', postId);
-  };
-
-  const handleEdit = async (postId) => {
-    if (!isAuthenticated) return;
-    // Add your edit logic here
-    console.log('Editing post:', postId);
-  };
-
-  // Function to generate shareable link
-  const getShareableLink = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/posts/${currentUserId}`;
-  };
+  }, [retrieve_userID]);
 
   if (isLoading) {
     return (
@@ -80,28 +55,6 @@ function Home() {
   return (
     <div className="container mt-4">
       <h1 className="text-center mb-4">Posts</h1>
-      
-      {/* Controls for authenticated user */}
-      {isAuthenticated && (
-        <div className="mb-4 d-flex justify-content-between align-items-center">
-          <button className="btn btn-primary">Create New Post</button>
-          <div className="input-group w-50">
-            <input 
-              type="text" 
-              className="form-control" 
-              value={getShareableLink()} 
-              readOnly
-            />
-            <button 
-              className="btn btn-outline-secondary"
-              onClick={() => navigator.clipboard.writeText(getShareableLink())}
-            >
-              Copy Link
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="row">
         {posts.map((post) => (
           <div className="col-12 mb-4" key={post.post_id || post.id}>
@@ -131,24 +84,6 @@ function Home() {
                       </span>
                     ))}
                   </div>
-                  
-                  {/* Only show edit/delete buttons if authenticated */}
-                  {isAuthenticated && (
-                    <div className="btn-group">
-                      <button 
-                        className="btn btn-outline-primary me-2"
-                        onClick={() => handleEdit(post.id)}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="btn btn-outline-danger"
-                        onClick={() => handleDelete(post.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -165,4 +100,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default Posts;
